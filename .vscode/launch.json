@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}",
+            "args": ["programaPascal.pas"]
+        },
+        {
+            "type": "java",
+            "name": "Compiler",
+            "request": "launch",
+            "mainClass": "Compiler",
+            "projectName": "projetocompilador_bee90034"
+        }
+    ]
+}
