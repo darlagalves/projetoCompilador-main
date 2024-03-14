@@ -60,7 +60,7 @@ public class Sintatico {
         //{A44}
         if(isReservedWord("begin") ){
             token = lexico.nextToken();
-            //sentencas();
+            sentencas();
             if(isReservedWord("end")){
                 token = lexico.nextToken();
                 //{A46}
@@ -70,6 +70,28 @@ public class Sintatico {
         }else{
             System.err.println(token.getline() + "," + token.getcolumn() + " Palavra reservada (begin) esperada no inicio");
         }
+    }
+
+    private void sentencas(){
+        comando();
+        mais_sentencas();
+    }
+
+    private void comando(){
+
+    }
+
+    private void mais_sentencas(){
+        if(token.getClasse() == Classe.semicolon){
+            token = lexico.nextToken();
+            cont_sentencas();
+        }else{
+            System.err.println(token.getline() + "," + token.getcolumn() + "  ; esperado na regra mais_sentencas");
+        }
+    }
+
+    private void cont_sentencas(){
+        
     }
 
     //<declara> ::= var <dvar> <mais_dc> | ε
