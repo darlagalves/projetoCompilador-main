@@ -56,7 +56,7 @@ public class Lexic {
                 "of", "or", "packed", "procedure", "program",
                 "record", "repeat", "set", "then", "to", "read",
                 "type", "until", "var", "while", "with",
-                "integer", "real", "boolean", "char", "string"));
+                "integer", "real", "boolean", "char", "string", "true", "false"));
         return reservedWords.contains(lexeme);
     }
 
@@ -248,7 +248,21 @@ public class Lexic {
                 column++;
                 token.setClasse(Classe.equalOperator);
                 return token;
-            } else {
+            }else if (character == '(') {
+                token = new Token(line, column);
+                lexeme.append(character);
+                character = nextChar();
+                column++;
+                token.setClasse(Classe.parentesesEsquerda);
+                return token;
+            }else if (character == ')') {
+                token = new Token(line, column);
+                lexeme.append(character);
+                character = nextChar();
+                column++;
+                token.setClasse(Classe.parentesesDireita);
+                return token;
+            }             else {
                 System.err.println("Erro na linha " + line + " e coluna " + column + ": caracter inválido");
                 System.exit(-1);
             }

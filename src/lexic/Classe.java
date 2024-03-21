@@ -15,6 +15,9 @@ public enum Classe {
     greaterEqualOperator,
     lesserEqualOperator,
 
+    parentesesDireita,
+    parentesesEsquerda,
+
     equalOperator, // =
     distinctOperator, // <>
     andOperator, // and
@@ -22,7 +25,7 @@ public enum Classe {
     notOperador, // not
     allocation, // :=
     semicolon, // :
-    comma,
+    comma, // ,
     dot,
     colon,
     EOF

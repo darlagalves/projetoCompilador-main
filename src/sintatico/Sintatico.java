@@ -77,10 +77,6 @@ public class Sintatico {
         mais_sentencas();
     }
 
-    private void comando(){
-
-    }
-
     private void mais_sentencas(){
         if(token.getClasse() == Classe.semicolon){
             token = lexico.nextToken();
@@ -91,7 +87,244 @@ public class Sintatico {
     }
 
     private void cont_sentencas(){
-        
+        if(isReservedWord("read") ||
+        isReservedWord("write") ||
+        isReservedWord("writeln") ||
+        isReservedWord("for")||
+        isReservedWord("repeat") ||
+        isReservedWord("while")||
+        isReservedWord("if") ||
+        token.getClasse() == Classe.identifier){
+            sentencas();
+        }
+    }
+
+    private void comando(){
+        if(isReservedWord("read")){
+            token = lexico.nextToken();
+            if(token.getClasse() == Classe.parentesesEsquerda){
+                token = lexico.nextToken();
+                var_read();
+                if(token.getClasse() == Classe.parentesesDireita){
+                    token = lexico.nextToken();
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + "  ) esperado na regra comando read");
+                }
+            }else{
+                System.err.println(token.getline() + "," + token.getcolumn() + "  ( esperado na regra comando read");
+            }
+        }else if(isReservedWord("write")){
+            token = lexico.nextToken();
+            if(token.getClasse() == Classe.parentesesEsquerda){
+                token = lexico.nextToken();
+                exp_write();
+                if(token.getClasse() == Classe.parentesesDireita){
+                    token = lexico.nextToken();
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + "  ) esperado na regra comando write");
+                }
+            }else{
+                System.err.println(token.getline() + "," + token.getcolumn() + "  ( esperado na regra comando write");
+            }
+        } else if(isReservedWord("writeln")){
+            token = lexico.nextToken();
+            if(token.getClasse() == Classe.parentesesEsquerda){
+                token = lexico.nextToken();
+                exp_write();
+                if(token.getClasse() == Classe.parentesesDireita){
+                    token = lexico.nextToken();
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + "  ) esperado na regra comando writeln");
+                }
+            }else{
+                System.err.println(token.getline() + "," + token.getcolumn() + "  ( esperado na regra comando writeln");
+            }
+        } else if (isReservedWord("for")){
+            token = lexico.nextToken();
+            if(token.getClasse() == Classe.identifier){
+                token = lexico.nextToken();
+                if(token.getClasse() == Classe.allocation ){
+                    token = lexico.nextToken();
+                    //expressao();
+
+                    if(isReservedWord("to")){
+                        token = lexico.nextToken();
+                        //expressao();
+                        if(isReservedWord("do")){
+                            token = lexico.nextToken();
+                            if(isReservedWord("begin")){
+                                token = lexico.nextToken();
+                                sentencas();
+                                if(isReservedWord("end")){
+                                    token = lexico.nextToken();
+                                    
+                                }else{
+                                    System.err.println(token.getline() + "," + token.getcolumn() + "  (end) esperado na regra comando for");
+                                }
+                            }else{
+                                System.err.println(token.getline() + "," + token.getcolumn() + "  (begin) esperado na regra comando for");
+                            }
+                            
+                        }else{
+                            System.err.println(token.getline() + "," + token.getcolumn() + "  (do) esperado na regra comando for");
+                        }
+                    }else{
+                        System.err.println(token.getline() + "," + token.getcolumn() + "  (to) esperado na regra comando for");
+                    }
+                    
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + "  := esperado na regra comando for");
+                }
+            }else{
+                System.err.println(token.getline() + "," + token.getcolumn() + "  identificador esperado na regra comando for");
+            }
+        }else if(isReservedWord("repeat")){
+            token = lexico.nextToken();
+            sentencas();
+            if(isReservedWord("until")){
+                token = lexico.nextToken();
+                if(token.getClasse() == Classe.parentesesEsquerda){
+                    token = lexico.nextToken();
+                    //expressao_logica();
+                    if(token.getClasse() == Classe.parentesesDireita){
+                        token = lexico.nextToken();
+                        
+                    }else{
+                        System.err.println(token.getline() + "," + token.getcolumn() + "  ) esperado na regra comando repeat");
+                    }
+                    
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + "  ( esperado na regra comando repeat");
+                }
+            }else{
+                System.err.println(token.getline() + "," + token.getcolumn() + "  (until) esperado na regra comando repeat");
+            }
+        }else if(isReservedWord("while")){
+            token = lexico.nextToken();
+                if(token.getClasse() == Classe.parentesesEsquerda){
+                    token = lexico.nextToken();
+                    //expressao_logica();
+                    if(token.getClasse() == Classe.parentesesDireita){
+                        token = lexico.nextToken();
+                        if(isReservedWord("do")){
+                            token = lexico.nextToken();
+                            if(isReservedWord("begin")){
+                                token = lexico.nextToken();
+                                sentencas();
+                                if(isReservedWord("end")){
+                                    token = lexico.nextToken();
+                                    
+                                }else{
+                                    System.err.println(token.getline() + "," + token.getcolumn() + "  (end) esperado na regra comando while");
+                                }
+                            }else{
+                                System.err.println(token.getline() + "," + token.getcolumn() + "  (begin) esperado na regra comando while");
+                            }
+                            
+                        }else{
+                            System.err.println(token.getline() + "," + token.getcolumn() + "  (do) esperado na regra comando while");
+                        }
+                    }else{
+                        System.err.println(token.getline() + "," + token.getcolumn() + "  ) esperado na regra comando while");
+                    }
+                    
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + "  ( esperado na regra comando while");
+                }
+        }else if(isReservedWord("if")){
+            token = lexico.nextToken();
+            if(token.getClasse() == Classe.parentesesEsquerda){
+                token = lexico.nextToken();
+                //expressao_logica();
+                if(token.getClasse() == Classe.parentesesDireita){
+                    token = lexico.nextToken();
+                    if(isReservedWord("then")){
+                        token = lexico.nextToken();
+                        if(isReservedWord("begin")){
+                            token = lexico.nextToken();
+                            sentencas();
+                            if(isReservedWord("end")){
+                                token = lexico.nextToken();
+                                pfalsa();
+                                
+                            }else{
+                                System.err.println(token.getline() + "," + token.getcolumn() + "  (end) esperado na regra comando if");
+                            }
+                        }else{
+                            System.err.println(token.getline() + "," + token.getcolumn() + "  (begin) esperado na regra comando if");
+                        }
+                        
+                    }else{
+                        System.err.println(token.getline() + "," + token.getcolumn() + "  (do) esperado na regra comando if");
+                    }
+                    
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + "  ) esperado na regra comando if");
+                }
+                
+            }else{
+                System.err.println(token.getline() + "," + token.getcolumn() + "  ( esperado na regra comando if");
+            }
+        }else if (token.getClasse() == Classe.identifier){
+            token = lexico.nextToken();
+            if (token.getClasse() == Classe.allocation){
+                token = lexico.nextToken();
+                //expressao();
+            }else{
+                System.err.println(token.getline() + "," + token.getcolumn() + "  := esperado na regra comando apos o identificador(id)");
+            }
+        }
+    }
+
+    private void pfalsa(){
+        if (isReservedWord("else")){
+            token = lexico.nextToken();
+            if(isReservedWord("begin")){
+                token = lexico.nextToken();
+                sentencas();
+                if(isReservedWord("end")){
+                    token = lexico.nextToken(); 
+                }
+            }
+        }
+    }
+
+    private void var_read(){
+        if (token.getClasse() == Classe.identifier){
+            token = lexico.nextToken();
+            mais_var_read();
+        }else{
+            System.err.println(token.getline() + "," + token.getcolumn() + "  id esperado na regra var_read");
+        }
+    }
+
+    private void mais_var_read(){
+        if (token.getClasse() == Classe.comma){
+            token = lexico.nextToken();
+            var_read();
+        }
+    }
+
+    private void exp_write(){
+        if (token.getClasse() == Classe.identifier){
+            token = lexico.nextToken();
+            mais_exp_write();
+        }else if (token.getClasse() == Classe.String){
+            token = lexico.nextToken();
+            mais_exp_write();
+        } else if (token.getClasse() == Classe.integerNumber){
+            token = lexico.nextToken();
+            mais_exp_write();
+        } else{
+            System.err.println(token.getline() + "," + token.getcolumn() + "  id, string ou intnum esperado na regra exp_write");
+        }
+    }
+
+    private void mais_exp_write(){
+        if (token.getClasse() == Classe.comma){
+            token = lexico.nextToken();
+            exp_write();
+        }
     }
 
     //<declara> ::= var <dvar> <mais_dc> | ε
