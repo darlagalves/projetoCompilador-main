@@ -1,31 +1,31 @@
-program condicional;
-var x, y : integer;
-    z : integer;
+program completo;
+var
+    x, y: integer;
 begin
-    read(x,y);
+    read(x);
+    read(y);
+    read(x, y);
+
     write(x);
+    write('texto');
+    write(10);
+
     writeln(x);
-    for i := to do 
-        begin
-            writeln(x);
-        end;
-    repeat
-        read(x);
-    until();
-    while() do
-        begin
-            read(x);
-        end;
-    if() then
-        begin
-            read(x);
-        end;
-    if() then
-        begin
-            read(x);
-        end
-    else
-        begin
-            read(x);
-        end;
+    writeln('texto');
+    writeln(10);
+
+    for x := 1 to 10 do begin
+        write(x);
+        write(y);
+    end;
+     x := 1;
+
+    if (x >= 10) then
+    begin
+        write(x);
+        write(y);
+    end;
+
+
+    x := 10;
 end.
