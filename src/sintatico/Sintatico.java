@@ -442,7 +442,7 @@ public class Sintatico {
             //token = lexico.nextToken();
             //System.out.println(token);
             expressao();
-            System.out.println(token);
+            //System.out.println(token);
             if (token.getClasse() == Classe.equalOperator ||
             token.getClasse() == Classe.greaterOperator ||
             token.getClasse() == Classe.greaterEqualOperator ||
@@ -496,9 +496,10 @@ public class Sintatico {
     }
 
     private void fator(){
-        System.out.println(token);
+        
         if(token.getClasse() == Classe.identifier){
             token = lexico.nextToken();
+            
         } else if (token.getClasse() == Classe.integerNumber) {
             token = lexico.nextToken();
         } else if(token.getClasse() == Classe.parentesesEsquerda){

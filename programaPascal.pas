@@ -18,7 +18,17 @@ begin
         write(x);
         write(y);
     end;
-     x := 1;
+
+    x := 1;
+    repeat
+        write(x);
+        x := x + 1;
+    until (x > 10);
+
+    while (x >= 1) do begin
+        write(x);
+        x := x - 1;
+    end;
 
     if (x >= 10) then
     begin
@@ -26,6 +36,35 @@ begin
         write(y);
     end;
 
+    if (x >= 10) then
+    begin
+        write(x);
+        write(y);
+    end
+    else
+    begin
+        write(y);
+        write(x);
+    end;
+
+    if (x >= 10 and y <= 10) then
+    begin
+        write(x);
+        write(y);
+    end;
+
+    if (x >= 10 or y <= 10) then
+    begin
+        write(x);
+        write(y);
+    end;
+
+    if (not (x >= 10)) then
+    begin
+        write(x);
+        write(y);
+    end;
 
     x := 10;
 end.
+

@@ -127,6 +127,9 @@ public class Lexic {
                 character = nextChar();
                 line++;
                 column = 1;
+            }else if (character == ' ') {
+                character = nextChar();
+                column++;
             } else if (Character.isDigit(character)) {
                 token = new Token(line, column);
                 lexeme.append(character);
@@ -197,17 +200,18 @@ public class Lexic {
                 return token;
             } else if (character == '>') {
                 token = new Token(line, column);
-                lexeme.append(character);
+                //lexeme.append(character);
                 character = nextChar();
                 column++;
                 if (character == '=') {
-                    lexeme.append(character);
+                    //lexeme.append(character);
                     character = nextChar();
                     column++;
                     token.setClasse(Classe.greaterEqualOperator);
                 } else {
                     token.setClasse(Classe.greaterOperator);
                 }
+                return token;
             } else if (character == ':') {
                 token = new Token(line, column);
                 lexeme.append(character);
