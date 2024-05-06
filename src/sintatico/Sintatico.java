@@ -2,6 +2,15 @@ package sintatico;
 
 import lexic.Lexic;
 import lexic.Token;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+
 import lexic.Classe;
 
 
@@ -11,6 +20,18 @@ public class Sintatico {
     private Lexic lexico;
     private Token token;
 
+    private TabelaSimbolos tabela = new TabelaSimbolos();
+    private String rotulo = "";
+    private int contRotulo = 1;
+    private int offsetVariavel = 0;
+    private String nomeArquivoSaida;
+    private String caminhoArquivoSaida;
+    private BufferedWriter bw;
+    private FileWriter fw;
+    private static final int TAMANHO_INTEIRO = 4;
+    private List<String> variaveis = new ArrayList<>();
+    private List<String> sectionData = new ArrayList<>();
+
     public boolean isReservedWord(String wordAux){
         return token.getClasse() == Classe.reservedWord &&  token.getValue().getstringValue().equals(wordAux) ;
     }
@@ -18,7 +39,38 @@ public class Sintatico {
     public Sintatico (String nomeArquivo){
         this.nomeArquivo = nomeArquivo;
         lexico = new Lexic(nomeArquivo);
+
+        nomeArquivoSaida = "queronemver.asm";
+        caminhoArquivoSaida = Paths.get(nomeArquivoSaida).toAbsolutePath().toString();
+        bw = null;
+        fw = null;
+        try {
+            fw = new FileWriter(caminhoArquivoSaida, Charset.forName("UTF-8"));
+            bw = new BufferedWriter(fw);
+        } catch (Exception e) {
+            System.err.println("Erro ao criar arquivo de saída");
+        }
     }
+
+    private void escreverCodigo(String instrucoes) {
+		try {
+			if (rotulo.isEmpty()) {
+				bw.write(instrucoes + "\n");
+			} else {
+				bw.write(rotulo + ": " +  instrucoes + "\n");
+				rotulo = "";
+			}
+		} catch (IOException e) {
+			System.err.println("Erro escrevendo no arquivo de saída");
+		}
+	}
+
+    //funcao para criar um rotulo
+    private String criarRotulo(String texto) {
+		String retorno = "rotulo" + texto + contRotulo;
+		contRotulo++;
+		return retorno;
+	}
 
     public void analisar(){
         System.out.println("Analisando: " + nomeArquivo);
@@ -31,14 +83,43 @@ public class Sintatico {
         if(isReservedWord("program")){
             token = lexico.nextToken();
             if(token.getClasse() == Classe.identifier){
-                token = lexico.nextToken();
                 //{A01}
+                Registro registro  = tabela.add(token.getValue().getstringValue());
+                offsetVariavel = 0;
+                registro.setCategoria(Categoria.PROGRAMAPRINCIPAL);
+                escreverCodigo("global main");
+                escreverCodigo("extern printf");
+                escreverCodigo("extern scanf\n");
+                escreverCodigo("section .text ");
+                rotulo = "main";
+                escreverCodigo("\t; Entrada do programa");
+                escreverCodigo("\tpush ebp");
+                escreverCodigo("\tmov ebp, esp");
+                System.out.println(tabela);
+
+                token = lexico.nextToken();
+
                 if(token.getClasse() == Classe.semicolon){
                     token = lexico.nextToken();
                     corpo();
                     if(token.getClasse() == Classe.dot){
                         token = lexico.nextToken();
                         //{A45}
+                        escreverCodigo("\tleave");
+                        escreverCodigo("\tret");
+                        if (!sectionData.isEmpty()) {
+                            escreverCodigo("\nsection .data\n");
+                            for (String mensagem : sectionData) {
+                                escreverCodigo(mensagem);
+                            }
+                        }
+                        try {
+                            bw.close();
+                            fw.close();
+                        } catch (IOException e) {
+                            System.err.println("Erro ao fechar arquivo de saída");
+                        }
+
                     }else{
                         System.err.println(token.getline() + "," + token.getcolumn() + " (.) Ponto final esperado no programa.");
                     }
@@ -52,6 +133,8 @@ public class Sintatico {
             System.err.println(token.getline() + "," + token.getcolumn() + " Palavra reservada esperando");
         }
     }
+
+
 
     //<corpo> ::= <declara> <rotina> {A44} begin <sentencas> end {A46}
     private void corpo(){
@@ -291,6 +374,29 @@ public class Sintatico {
 
     private void var_read(){
         if (token.getClasse() == Classe.identifier){
+            //{A08}
+            String variavel = token.getValue().getstringValue();
+            if (!tabela.isPresent(variavel)) {
+                System.err.println("Variável " + variavel + " não foi declarada");
+                System.exit(-1);
+            } else {
+                Registro registro = tabela.get(variavel);
+                if (registro.getCategoria() != Categoria.VARIAVEL) {
+                    System.err.println("Identificador " + variavel + " não é uma variável");
+                    System.exit(-1);
+                } else {
+                    escreverCodigo("\tmov edx, ebp");
+                    escreverCodigo("\tlea eax, [edx - " + registro.getOffset() + "]");
+                    escreverCodigo("\tpush eax");
+                    escreverCodigo("\tpush @Integer");
+                    escreverCodigo("\tcall scanf");
+                    escreverCodigo("\tadd esp, 8");
+                    if (!sectionData.contains("@Integer: db '%d',0")) {
+                        sectionData.add("@Integer: db '%d',0");
+                    }
+
+                }
+            }
             token = lexico.nextToken();
             mais_var_read();
         }else{
@@ -307,12 +413,52 @@ public class Sintatico {
 
     private void exp_write(){
         if (token.getClasse() == Classe.identifier){
+            String variavel = token.getValue().getstringValue();
+            if (!tabela.isPresent(variavel)) {
+                System.err.println("Variável " + variavel + " não foi declarada");
+                System.exit(-1);
+            } else {
+                Registro registro = tabela.get(variavel);
+                if (registro.getCategoria() != Categoria.VARIAVEL) {
+                    System.err.println("Identificador " + variavel + " não é uma variável");
+                    System.exit(-1);
+                } else {
+                    escreverCodigo("\tpush dword[ebp - " + registro.getOffset() + "]");
+                    escreverCodigo("\tpush @Integer");
+                    escreverCodigo("\tcall printf");
+                    escreverCodigo("\tadd esp, 8");
+                    if (!sectionData.contains("@Integer: db '%d',0")) {
+                        sectionData.add("@Integer: db '%d',0");
+                    }
+                }
+            }
+
             token = lexico.nextToken();
             mais_exp_write();
         }else if (token.getClasse() == Classe.String){
+
+            //A59
+            String string = token.getValue().getstringValue();
+            String rotulo = criarRotulo("String");
+            sectionData.add(rotulo + ": db '" + string + "', 0 ");
+            escreverCodigo("\tpush " + rotulo);
+            escreverCodigo("\tcall printf");
+            escreverCodigo("\tadd esp, 4");
+
             token = lexico.nextToken();
             mais_exp_write();
         } else if (token.getClasse() == Classe.integerNumber){
+
+            //A43
+            int numero = token.getValue().getintegerValue();
+            escreverCodigo("\tpush " + numero);
+            escreverCodigo("\tpush @Integer");
+            escreverCodigo("\tcall printf");
+            escreverCodigo("\tadd esp, 8");
+            if (!sectionData.contains("@Integer: db '%d',0")) {
+                sectionData.add("@Integer: db '%d',0");
+            }
+
             token = lexico.nextToken();
             mais_exp_write();
         } else{
@@ -358,6 +504,16 @@ public class Sintatico {
         if(token.getClasse() == Classe.colon){
             token = lexico.nextToken();
             tipo_var();
+
+            int tamanho = 0;
+            for (String var : variaveis){
+                tabela.get(var).setTipo(Tipo.INTEGER);
+                tamanho += TAMANHO_INTEIRO;
+            }
+            escreverCodigo("\tsub esp, " + tamanho );
+            variaveis.clear();
+
+
         }else{
             System.err.println(token.getline() + "," + token.getcolumn() + " : esperado na regra dvar");
         }
@@ -373,8 +529,20 @@ public class Sintatico {
 
     private void variaveis(){
         if(token.getClasse() == Classe.identifier){
-            token = lexico.nextToken();
             //{A03}
+            String variavel = token.getValue().getstringValue();
+            if(tabela.isPresent(variavel)){
+                System.out.println("Variável " + variavel + " já foi declarada anteriormente");
+                System.exit(-1);
+            } else{
+                tabela.add(variavel);
+                tabela.get(variavel).setCategoria(Categoria.VARIAVEL);
+                tabela.get(variavel).setOffset(offsetVariavel);
+                offsetVariavel += TAMANHO_INTEIRO;
+                variaveis.add(variavel);
+            }
+            System.out.println(tabela);
+            token = lexico.nextToken();
             mais_var();
         }
     }
@@ -435,14 +603,13 @@ public class Sintatico {
     }
 
     private void relacional(){
-        //System.out.println(token);
+        
         if(token.getClasse() == Classe.identifier ||
         token.getClasse() == Classe.integerNumber ||
         token.getClasse() == Classe.parentesesEsquerda){
-            //token = lexico.nextToken();
-            //System.out.println(token);
+            
             expressao();
-            //System.out.println(token);
+            
             if (token.getClasse() == Classe.equalOperator ||
             token.getClasse() == Classe.greaterOperator ||
             token.getClasse() == Classe.greaterEqualOperator ||
