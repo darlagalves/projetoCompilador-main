@@ -140,7 +140,7 @@ public class Lexic {
                     character = nextChar();
                     column++;
                 }
-                token.setClasse(Classe.identifier);
+                token.setClasse(Classe.integerNumber);
                 token.setValue(new Value(Integer.parseInt(lexeme.toString())));
                 return token;
             } else if (Character.isWhitespace(character)) {

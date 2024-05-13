@@ -31,6 +31,7 @@ public class Sintatico {
     private static final int TAMANHO_INTEIRO = 4;
     private List<String> variaveis = new ArrayList<>();
     private List<String> sectionData = new ArrayList<>();
+    private Registro registro;
 
     public boolean isReservedWord(String wordAux){
         return token.getClasse() == Classe.reservedWord &&  token.getValue().getstringValue().equals(wordAux) ;
@@ -216,6 +217,18 @@ public class Sintatico {
                 exp_write();
                 if(token.getClasse() == Classe.parentesesDireita){
                     token = lexico.nextToken();
+                    //A61
+                    //A61
+                    // Gerar um avanço de linha, ou seja, um line feed
+                    //rotuloString2: db
+
+                    String novaLinha = "rotuloStringLN: db '', 10, 0";
+                    if(!sectionData.contains(novaLinha)){
+                        sectionData.add(novaLinha);
+                    }
+                    escreverCodigo("\tpush rotuloStringLN");
+                    escreverCodigo("\tcall printf");
+                    escreverCodigo("\tadd esp, 4");
                 }else{
                     System.err.println(token.getline() + "," + token.getcolumn() + "  ) esperado na regra comando writeln");
                 }
@@ -225,14 +238,40 @@ public class Sintatico {
         } else if (isReservedWord("for")){
             token = lexico.nextToken();
             if(token.getClasse() == Classe.identifier){
+                //A57
+                String variavel = token.getValue().getstringValue();
+                if (!tabela.isPresent(variavel)) {
+                    System.err.println("Variável " + variavel + " não foi declarada (a57)");
+                    System.exit(-1);
+                } else {
+                    registro = tabela.get(variavel);
+                    if (registro.getCategoria() != Categoria.VARIAVEL) {
+                        System.err.println("Identificador " + variavel + " não é uma variável");
+                        System.exit(-1);
+                    }
+                }
                 token = lexico.nextToken();
+                
                 if(token.getClasse() == Classe.allocation ){
                     token = lexico.nextToken();
                     expressao();
+                    //A11
+                    escreverCodigo("\tpop dword [ebp - " +registro.getOffset() + "]");
+
+                    String rotuloEntrada = criarRotulo("FOR");
+                    String rotuloSaida = criarRotulo("FIMFOR");
+
+                    rotulo =  rotuloEntrada;
 
                     if(isReservedWord("to")){
                         token = lexico.nextToken();
                         expressao();
+                        //A12
+                        escreverCodigo("\tpush ecx\n"
+								  + "\tmov ecx, dword[ebp - " + registro.getOffset() + "]\n"
+								  + "\tcmp ecx, dword[esp+4]\n"  //+4 por causa do ecx
+								  + "\tjg " + rotuloSaida + "\n"
+								  + "\tpop ecx");
                         if(isReservedWord("do")){
                             token = lexico.nextToken();
                             if(isReservedWord("begin")){
@@ -240,6 +279,13 @@ public class Sintatico {
                                 sentencas();
                                 if(isReservedWord("end")){
                                     token = lexico.nextToken();
+                                    // {A13}
+                                    // Gerar as instruções para incrementar a variável id.
+                                    escreverCodigo("\tadd dword[ebp - " + registro.getOffset() + "], 1");
+                                    // Gerar um desvio para rotuloFor.
+                                    escreverCodigo("\tjmp " + rotuloEntrada);
+                                    // Gerar o rótulo rotuloFim.
+                                    rotulo = rotuloSaida;
                                     
                                 }else{
                                     System.err.println(token.getline() + "," + token.getcolumn() + "  (end) esperado na regra comando for");
@@ -262,6 +308,9 @@ public class Sintatico {
                 System.err.println(token.getline() + "," + token.getcolumn() + "  identificador esperado na regra comando for");
             }
         }else if(isReservedWord("repeat")){
+            //A14
+            String rotRepeat = criarRotulo("Repeat");
+            rotulo = rotRepeat;
             token = lexico.nextToken();
             sentencas();
             if(isReservedWord("until")){
@@ -271,6 +320,9 @@ public class Sintatico {
                     expressao_logica();
                     if(token.getClasse() == Classe.parentesesDireita){
                         token = lexico.nextToken();
+                        //A15
+                        escreverCodigo("\tcmp dword[esp], 0\n");
+                        escreverCodigo("\tje  \n" + rotRepeat);
                         
                     }else{
                         System.err.println(token.getline() + "," + token.getcolumn() + "  ) esperado na regra comando repeat");
@@ -377,7 +429,7 @@ public class Sintatico {
             //{A08}
             String variavel = token.getValue().getstringValue();
             if (!tabela.isPresent(variavel)) {
-                System.err.println("Variável " + variavel + " não foi declarada");
+                System.err.println("Variável " + variavel + " não foi declarada a08");
                 System.exit(-1);
             } else {
                 Registro registro = tabela.get(variavel);
@@ -414,8 +466,9 @@ public class Sintatico {
     private void exp_write(){
         if (token.getClasse() == Classe.identifier){
             String variavel = token.getValue().getstringValue();
+            //A09
             if (!tabela.isPresent(variavel)) {
-                System.err.println("Variável " + variavel + " não foi declarada");
+                System.err.println("Variável " + variavel + " não foi declarada a09");
                 System.exit(-1);
             } else {
                 Registro registro = tabela.get(variavel);
@@ -564,6 +617,33 @@ public class Sintatico {
             token = lexico.nextToken();
             termo_logico();
             mais_expr_logica();
+            // {A26}
+            // Empilhar 1, caso o valor de expressao_logica ou termo_logico seja 1, e 0
+            // (falso), caso seja diferente. Isto pode ser feito da seguinte forma:
+            // Crie um novo rótulo, digamos rotSaida
+            String rotSaida = criarRotulo("SaidaMEL");
+            // Crie um novo rótulo, digamos rotVerdade
+            String rotVerdade = criarRotulo("VerdadeMEL");
+            // Gere a instrução: cmp dword [ESP + 4], 1
+            escreverCodigo("\tcmp dword [ESP + 4], 1");
+            // Gere a instrução je para rotVerdade
+            escreverCodigo("\tje " + rotVerdade);
+            // Gere a instrução: cmp dword [ESP], 1
+            escreverCodigo("\tcmp dword [ESP], 1");
+            // Gere a instrução je para rotVerdade
+            escreverCodigo("\tje " + rotVerdade);
+            // Gere a instrução: mov dword [ESP + 4], 0
+            escreverCodigo("\tmov dword [ESP + 4], 0");
+            // Gere a instrução jmp para rotSaida
+            escreverCodigo("\tjmp " + rotSaida);
+            // Gere o rótulo rotVerdade
+            rotulo = rotVerdade;
+            // Gere a instrução: mov dword [ESP + 4], 1
+            escreverCodigo("\tmov dword [ESP + 4], 1");
+            // Gere o rótulo rotSaida
+            rotulo = rotSaida;
+            // Gere a instrução: add esp, 4
+            escreverCodigo("\tadd esp, 4");
         }
     }
 
@@ -578,6 +658,36 @@ public class Sintatico {
             token = lexico.nextToken();
             fator_logico();
             mais_termo_logico();
+            // {A27}
+            // Empilhar 1 (verdadeiro), caso o valor de termo_logico e fator_logico seja 1,
+            // e 0 (falso), caso seja diferente. Proceda de forma semelhante a ação 26.
+            // Crie um novo rótulo, digamos rotSaida
+            String rotSaida = criarRotulo("SaidaMTL");
+            // Crie um novo rótulo, digamos rotFalso
+            String rotFalso = criarRotulo("FalsoMTL");
+            // Gere a instrução: cmp dword [ESP + 4], 1
+            escreverCodigo("\tcmp dword [ESP + 4], 1");
+            escreverCodigo("\tjne " + rotFalso);
+            // Comparar os 2 valores
+            // Gere a instrução: pop eax
+            escreverCodigo("\tpop eax");
+            // Gere a instrução: cmp dword [ESP], eax
+            escreverCodigo("\tcmp dword [ESP], eax");
+            // Gere a instrução je para rotVerdade
+            escreverCodigo("\tjne " + rotFalso);
+            // Gere a instrução: mov dword [ESP + 4], 1
+            escreverCodigo("\tmov dword [ESP], 1");
+            // Gere a instrução jmp para rotSaida
+            escreverCodigo("\tjmp " + rotSaida);
+            // Gere o rótulo rotFalso
+            rotulo = rotFalso;
+            // Gere a instrução: mov dword [ESP], 0
+            escreverCodigo("\tmov dword [ESP], 0");
+            // Gere o rótulo rotSaida
+            rotulo = rotSaida;
+            // Gere a instrução: add esp, 4
+            // escreverCodigo("\tadd esp, 4");
+
         }
     }
 
@@ -593,10 +703,36 @@ public class Sintatico {
         }else if (isReservedWord("not")){
             token = lexico.nextToken();
             fator_logico();
+            //{A28}
+            // Empilhar 1 (verdadeiro), caso o valor de fator_logico seja 0, e 0 (falso),
+            // caso seja diferente. Proceda da seguinte forma:
+            // Crie um rótulo Falso e outro Saida.
+            String rotFalso = criarRotulo("FalsoFL");
+            String rotSaida = criarRotulo("SaidaFL");
+            // Gere a instrução: cmp dword [ESP], 1
+            escreverCodigo("\tcmp dword [ESP], 1");
+            // Gere a instrução: jne Falso
+            escreverCodigo("\tjne " + rotFalso);
+            // Gere a instrução: mov dword [ESP], 0
+            escreverCodigo("\tmov dword [ESP], 0");
+            // Gere a instrução: jmp Fim
+            escreverCodigo("\tjmp " + rotSaida);
+            // Gere o rótulo Falso
+            rotulo = rotFalso;
+            // Gere a instrução: mov dword [ESP], 1
+            escreverCodigo("\tmov dword [ESP], 1");
+            // Gere o rótulo Fim
+            rotulo = rotSaida;
         }else if (isReservedWord("true")){
             token = lexico.nextToken();
+            //{A29}
+            //Empilhar 1
+            escreverCodigo("\tpush 1");
         }else if (isReservedWord("false")){
             token = lexico.nextToken();
+            //{A30}
+            //Empilhar 0
+            escreverCodigo("\tpush 0");
         }else{
             relacional();
         }
@@ -610,21 +746,202 @@ public class Sintatico {
             
             expressao();
             
-            if (token.getClasse() == Classe.equalOperator ||
-            token.getClasse() == Classe.greaterOperator ||
-            token.getClasse() == Classe.greaterEqualOperator ||
-            token.getClasse() == Classe.lessesOperator ||
-            token.getClasse() == Classe.lesserEqualOperator ||
-            token.getClasse() == Classe.distinctOperator) {
+            if (token.getClasse() == Classe.equalOperator) {
                 token = lexico.nextToken();
                 if(token.getClasse() == Classe.identifier ||
                     token.getClasse() == Classe.integerNumber ||
                     token.getClasse() == Classe.parentesesEsquerda){
                         expressao();
+                        //{A31}
+                        // Empilhar 1 (verdadeiro), caso a primeira expressão expressao seja igual a
+                        // segunda, ou 0 (falso), caso contrário. Isto pode ser feito da seguinte forma:
+                        // Crie um rótulo Falso e outro Saida.
+                        String rotFalso = criarRotulo("FalsoREL");
+                        String rotSaida = criarRotulo("SaidaREL");
+                        // COMPARA 2 VALORES
+                        // Gere a instrução: pop eax
+                        escreverCodigo("\tpop eax");
+                        // Gere a instrução: cmp dword [ESP], eax
+                        escreverCodigo("\tcmp dword [ESP], eax");
+                        // Gere a instrução: jne Falso
+                        escreverCodigo("\tjne " + rotFalso);
+                        // Gere a instrução: mov dword [ESP], 1
+                        escreverCodigo("\tmov dword [ESP], 1");
+                        // Gere a instrução: jmp Fim
+                        escreverCodigo("\tjmp " + rotSaida);
+                        // Gere o rótulo Falso
+                        rotulo = rotFalso;
+                        // Gere a instrução: mov dword [ESP], 0
+                        escreverCodigo("\tmov dword [ESP], 0");
+                        // Gere o rótulo Fim
+                        rotulo = rotSaida;
                 }else{
                     System.err.println(token.getline() + "," + token.getcolumn() + " expressao esperada na primeira parte da regra relacional");
                 }
-            }else{
+            } else if (token.getClasse() == Classe.greaterOperator ){
+                token = lexico.nextToken();
+                if(token.getClasse() == Classe.identifier ||
+                    token.getClasse() == Classe.integerNumber ||
+                    token.getClasse() == Classe.parentesesEsquerda){
+                        expressao();
+                        // {A32}
+                        // Empilhar 1 (verdadeiro), caso a primeira expressão expressao seja maior que a
+                        // segunda, ou 0 (falso), caso contrário. Proceda como o exemplo da ação 31.
+                        // Crie um rótulo Falso e outro Saida.
+                        String rotFalso = criarRotulo("FalsoREL");
+                        String rotSaida = criarRotulo("SaidaREL");
+                        // Gere a instrução: pop eax
+                        escreverCodigo("\tpop eax");
+                        // Gere a instrução: cmp dword [ESP], eax
+                        escreverCodigo("\tcmp dword [ESP], eax");
+                        // Gere a instrução: jle Falso
+                        escreverCodigo("\tjle " + rotFalso);
+                        // Gere a instrução: mov dword [ESP], 1
+                        escreverCodigo("\tmov dword [ESP], 1");
+                        // Gere a instrução: jmp Fim
+                        escreverCodigo("\tjmp " + rotSaida);
+                        // Gere o rótulo Falso
+                        rotulo = rotFalso;
+                        // Gere a instrução: mov dword [ESP], 0
+                        escreverCodigo("\tmov dword [ESP], 0");
+                        // Gere o rótulo Fim
+                        rotulo = rotSaida;
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + " expressao esperada na primeira parte da regra relacional");
+                }
+
+            } else if (token.getClasse() == Classe.greaterEqualOperator ){
+                token = lexico.nextToken();
+                if(token.getClasse() == Classe.identifier ||
+                    token.getClasse() == Classe.integerNumber ||
+                    token.getClasse() == Classe.parentesesEsquerda){
+                        expressao();
+                        // {A33}
+                        // Empilhar 1 (verdadeiro), caso a primeira expressão expressao seja maior ou
+                        // igual a segunda, ou 0 (falso), caso contrário. Proceda como o exemplo da ação
+                        // 31.
+                        // Crie um rótulo Falso e outro Saida.
+                        String rotFalso = criarRotulo("FalsoREL");
+                        String rotSaida = criarRotulo("SaidaREL");
+                        // Gere a instrução: pop eax
+                        escreverCodigo("\tpop eax");
+                        // Gere a instrução: cmp dword [ESP], eax
+                        escreverCodigo("\tcmp dword [ESP], eax");
+                        // Gere a instrução: jl Falso
+                        escreverCodigo("\tjl " + rotFalso);
+                        // Gere a instrução: mov dword [ESP], 1
+                        escreverCodigo("\tmov dword [ESP], 1");
+                        // Gere a instrução: jmp Fim
+                        escreverCodigo("\tjmp " + rotSaida);
+                        // Gere o rótulo Falso
+                        rotulo = rotFalso;
+                        // Gere a instrução: mov dword [ESP], 0
+                        escreverCodigo("\tmov dword [ESP], 0");
+                        // Gere o rótulo Fim
+                        rotulo = rotSaida;
+
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + " expressao esperada na primeira parte da regra relacional");
+                }
+
+            } else if (token.getClasse() == Classe.lessesOperator){
+                token = lexico.nextToken();
+                if(token.getClasse() == Classe.identifier ||
+                    token.getClasse() == Classe.integerNumber ||
+                    token.getClasse() == Classe.parentesesEsquerda){
+                        expressao();
+                        // {A34}
+                        // Empilhar 1 (verdadeiro), caso a primeira expressão expressao seja menor que a
+                        // segunda, ou 0 (falso), caso contrário. Proceda como o exemplo da ação 31.
+                        // Crie um rótulo Falso e outro Saida.
+                        String rotFalso = criarRotulo("FalsoREL");
+                        String rotSaida = criarRotulo("SaidaREL");
+                        // Gere a instrução: pop eax
+                        escreverCodigo("\tpop eax");
+                        // Gere a instrução: cmp dword [ESP], eax
+                        escreverCodigo("\tcmp dword [ESP], eax");
+                        // Gere a instrução: jge Falso
+                        escreverCodigo("\tjge " + rotFalso);
+                        // Gere a instrução: mov dword [ESP], 1
+                        escreverCodigo("\tmov dword [ESP], 1");
+                        // Gere a instrução: jmp Fim
+                        escreverCodigo("\tjmp " + rotSaida);
+                        // Gere o rótulo Falso
+                        rotulo = rotFalso;
+                        // Gere a instrução: mov dword [ESP], 0
+                        escreverCodigo("\tmov dword [ESP], 0");
+                        // Gere o rótulo Fim
+                        rotulo = rotSaida;
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + " expressao esperada na primeira parte da regra relacional");
+                }
+
+            } else if (token.getClasse() == Classe.lesserEqualOperator){
+                token = lexico.nextToken();
+                if(token.getClasse() == Classe.identifier ||
+                    token.getClasse() == Classe.integerNumber ||
+                    token.getClasse() == Classe.parentesesEsquerda){
+                        expressao();
+                         // {A35}
+                        // Empilhar 1 (verdadeiro), caso a primeira expressão expressao seja menor ou
+                        // igual a segunda, ou 0 (falso), caso contrário. Proceda como o exemplo da ação
+                        // 31.
+                        // Crie um rótulo Falso e outro Saida.
+                        String rotFalso = criarRotulo("FalsoREL");
+                        String rotSaida = criarRotulo("SaidaREL");
+                        // Gere a instrução: pop eax
+                        escreverCodigo("\tpop eax");
+                        // Gere a instrução: cmp dword [ESP], eax
+                        escreverCodigo("\tcmp dword [ESP], eax");
+                        // Gere a instrução: jg Falso
+                        escreverCodigo("\tjg " + rotFalso);
+                        // Gere a instrução: mov dword [ESP], 1
+                        escreverCodigo("\tmov dword [ESP], 1");
+                        // Gere a instrução: jmp Fim
+                        escreverCodigo("\tjmp " + rotSaida);
+                        // Gere o rótulo Falso
+                        rotulo = rotFalso;
+                        // Gere a instrução: mov dword [ESP], 0
+                        escreverCodigo("\tmov dword [ESP], 0");
+                        // Gere o rótulo Fim
+                        rotulo = rotSaida;
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + " expressao esperada na primeira parte da regra relacional");
+                }
+
+            } else if (token.getClasse() == Classe.distinctOperator){
+                token = lexico.nextToken();
+                if(token.getClasse() == Classe.identifier ||
+                    token.getClasse() == Classe.integerNumber ||
+                    token.getClasse() == Classe.parentesesEsquerda){
+                        expressao();
+                         // {A36}
+                        // Empilhar 1 (verdadeiro), caso a primeira expressão expressao seja diferente
+                        // da segunda, ou 0 (falso), caso contrário. Proceda como o exemplo da ação 31.
+                        // Crie um rótulo Falso e outro Saida.
+                        String rotFalso = criarRotulo("FalsoREL");
+                        String rotSaida = criarRotulo("SaidaREL");
+                        // Gere a instrução: pop eax
+                        escreverCodigo("\tpop eax");
+                        // Gere a instrução: cmp dword [ESP], eax
+                        escreverCodigo("\tcmp dword [ESP], eax");
+                        // Gere a instrução: je Falso
+                        escreverCodigo("\tje " + rotFalso);
+                        // Gere a instrução: mov dword [ESP], 1
+                        escreverCodigo("\tmov dword [ESP], 1");
+                        // Gere a instrução: jmp Fim
+                        escreverCodigo("\tjmp " + rotSaida);
+                        // Gere o rótulo Falso
+                        rotulo = rotFalso;
+                        // Gere a instrução: mov dword [ESP], 0
+                        escreverCodigo("\tmov dword [ESP], 0");
+                        // Gere o rótulo Fim
+                        rotulo = rotSaida;
+                }else{
+                    System.err.println(token.getline() + "," + token.getcolumn() + " expressao esperada na primeira parte da regra relacional");
+                }
+
+            } else{
                 System.err.println(token.getline() + "," + token.getcolumn() + " = , > , >= , < , <= , <> esperado na regra relacional");
             }
         }else{
@@ -638,12 +955,20 @@ public class Sintatico {
     }
 
     private void mais_expressao(){
-        if(token.getClasse() == Classe.sumOperator ||
-        token.getClasse() == Classe.subtractOperator){
+        if(token.getClasse() == Classe.sumOperator){
             token = lexico.nextToken();
             termo();
             mais_expressao();
-
+            //{A37}
+            escreverCodigo("\tpop eax");
+            escreverCodigo("\tadd dword[ESP], eax");
+        } else if (token.getClasse() == Classe.subtractOperator){
+            token = lexico.nextToken();
+            termo();
+            mais_expressao();
+            //{A38}
+            escreverCodigo("\tpop eax");
+            escreverCodigo("\tsub dword[ESP], eax");
         }
     }
 
@@ -653,21 +978,54 @@ public class Sintatico {
     }
 
     private void mais_termo(){
-        if(token.getClasse() == Classe.multiplyOperator ||
-        token.getClasse() == Classe.divisionOperator){
+        if(token.getClasse() == Classe.multiplyOperator ){
             token = lexico.nextToken();
             fator();
             mais_termo();
+            //{A39}
+            escreverCodigo("\tpop eax");
+            escreverCodigo("\tmul eax, dword [ESP]");
+            escreverCodigo("\tmov dword[ESP], eax");
 
+        } else if (token.getClasse() == Classe.divisionOperator){
+            token = lexico.nextToken();
+            fator();
+            mais_termo();
+            //{A39}
+            escreverCodigo("\tpop ecx");
+            escreverCodigo("\tpop eax");
+            escreverCodigo("\tdiv ecx");
+            escreverCodigo("\tpush eax");
         }
     }
 
     private void fator(){
         
         if(token.getClasse() == Classe.identifier){
+            // {A55}
+            // Se a categoria do identificador id, reconhecido em fator, for variável ou
+            // parâmetro, então empilhar o valor armazenado no endereço de memória de id.
+            // Lembre-se, que o endereço de memória de id é calculado em função da base da
+            // pilha (EBP) e do deslocamento contido em display.
+            String variavel = token.getValue().getstringValue();
+            if (!tabela.isPresent(variavel)) {
+                System.err.println("Variável " + variavel + " não foi declarada");
+                System.exit(-1);
+            } else {
+                registro = tabela.get(variavel);
+                if (registro.getCategoria() != Categoria.VARIAVEL) {
+                    System.err.println("O identificador " + variavel + "não é uma variável. A55");
+                    System.exit(-1);
+                }
+            }
+            escreverCodigo("\tpush dword[ebp - " + registro.getOffset() + "]");
+            token = lexico.nextToken();
             token = lexico.nextToken();
             
         } else if (token.getClasse() == Classe.integerNumber) {
+            //{A41}
+            //empliha o numero correpondente a um
+            escreverCodigo("\tpush " +token.getValue().getintegerValue());
             token = lexico.nextToken();
         } else if(token.getClasse() == Classe.parentesesEsquerda){
             token = lexico.nextToken();
