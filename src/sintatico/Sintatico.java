@@ -32,6 +32,7 @@ public class Sintatico {
     private List<String> variaveis = new ArrayList<>();
     private List<String> sectionData = new ArrayList<>();
     private Registro registro;
+    private String rotuloElse;
 
     public boolean isReservedWord(String wordAux){
         return token.getClasse() == Classe.reservedWord &&  token.getValue().getstringValue().equals(wordAux) ;
@@ -321,8 +322,8 @@ public class Sintatico {
                     if(token.getClasse() == Classe.parentesesDireita){
                         token = lexico.nextToken();
                         //A15
-                        escreverCodigo("\tcmp dword[esp], 0\n");
-                        escreverCodigo("\tje  \n" + rotRepeat);
+                        escreverCodigo("\tcmp dword[esp], 0");
+                        escreverCodigo("\tje  " + rotRepeat);
                         
                     }else{
                         System.err.println(token.getline() + "," + token.getcolumn() + "  ) esperado na regra comando repeat");
@@ -336,11 +337,18 @@ public class Sintatico {
             }
         }else if(isReservedWord("while")){
             token = lexico.nextToken();
+            //{A16}
+            String rotuloWhile = criarRotulo("While");
+            String rotuloFim = criarRotulo("FimWhile");
+            rotulo = rotuloWhile;
                 if(token.getClasse() == Classe.parentesesEsquerda){
                     token = lexico.nextToken();
                     expressao_logica();
                     if(token.getClasse() == Classe.parentesesDireita){
                         token = lexico.nextToken();
+                        //{A17}
+                        escreverCodigo("\tcmp dword[esp], 0\n");
+                        escreverCodigo("\tje "+ rotuloFim);
                         if(isReservedWord("do")){
                             token = lexico.nextToken();
                             if(isReservedWord("begin")){
@@ -348,6 +356,9 @@ public class Sintatico {
                                 sentencas();
                                 if(isReservedWord("end")){
                                     token = lexico.nextToken();
+                                    //{A18}
+                                    escreverCodigo("\tjmp "+ rotuloWhile);
+                                    rotulo = rotuloFim;
                                     
                                 }else{
                                     System.err.println(token.getline() + "," + token.getcolumn() + "  (end) esperado na regra comando while");
@@ -373,6 +384,11 @@ public class Sintatico {
                 expressao_logica();
                 if(token.getClasse() == Classe.parentesesDireita){
                     token = lexico.nextToken();
+                    //{A19}
+                    rotuloElse = criarRotulo("Else");
+                    String rotuloFim = criarRotulo("FimIf");
+                    escreverCodigo("\tcmp dword[esp], 0\n");
+                    escreverCodigo("\tje "+ rotuloElse);
                     if(isReservedWord("then")){
                         token = lexico.nextToken();
                         if(isReservedWord("begin")){
@@ -380,8 +396,11 @@ public class Sintatico {
                             sentencas();
                             if(isReservedWord("end")){
                                 token = lexico.nextToken();
+                                //{A20}
+                                escreverCodigo("\tjmp "+ rotuloFim);
                                 pfalsa();
-                                
+                                //{A21}
+                                rotulo = rotuloFim;
                             }else{
                                 System.err.println(token.getline() + "," + token.getcolumn() + "  (end) esperado na regra comando if");
                             }
@@ -401,10 +420,23 @@ public class Sintatico {
                 System.err.println(token.getline() + "," + token.getcolumn() + "  ( esperado na regra comando if");
             }
         }else if (token.getClasse() == Classe.identifier){
+            String variavel = token.getValue().getstringValue();
+            if (!tabela.isPresent(variavel)) {
+                System.err.println("Variável " + variavel + " não foi declarada a49");
+                System.exit(-1);
+            } else {
+                Registro registro = tabela.get(variavel);
+                if (registro.getCategoria() != Categoria.VARIAVEL) {
+                    System.err.println("Identificador " + variavel + " não é uma variável");
+                    System.exit(-1);
+                }
+            }
             token = lexico.nextToken();
             if (token.getClasse() == Classe.allocation){
                 token = lexico.nextToken();
                 expressao();
+                escreverCodigo("\tpop eax");
+                escreverCodigo("\tmov dword[ebp -" + registro.getOffset() + "] , eax");
             }else{
                 System.err.println(token.getline() + "," + token.getcolumn() + "  := esperado na regra comando apos o identificador(id)");
             }
@@ -412,6 +444,9 @@ public class Sintatico {
     }
 
     private void pfalsa(){
+        //{A25}
+        //rotulo = rotuloElse;
+        escreverCodigo(rotuloElse + ":");
         if (isReservedWord("else")){
             token = lexico.nextToken();
             if(isReservedWord("begin")){
@@ -984,17 +1019,17 @@ public class Sintatico {
             mais_termo();
             //{A39}
             escreverCodigo("\tpop eax");
-            escreverCodigo("\tmul eax, dword [ESP]");
+            escreverCodigo("\timul eax, dword [ESP]");
             escreverCodigo("\tmov dword[ESP], eax");
 
         } else if (token.getClasse() == Classe.divisionOperator){
             token = lexico.nextToken();
             fator();
             mais_termo();
-            //{A39}
+            //{A40}
             escreverCodigo("\tpop ecx");
             escreverCodigo("\tpop eax");
-            escreverCodigo("\tdiv ecx");
+            escreverCodigo("\tidiv ecx");
             escreverCodigo("\tpush eax");
         }
     }
@@ -1019,7 +1054,6 @@ public class Sintatico {
                 }
             }
             escreverCodigo("\tpush dword[ebp - " + registro.getOffset() + "]");
-            token = lexico.nextToken();
             token = lexico.nextToken();
             
         } else if (token.getClasse() == Classe.integerNumber) {
