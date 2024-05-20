@@ -420,12 +420,13 @@ public class Sintatico {
                 System.err.println(token.getline() + "," + token.getcolumn() + "  ( esperado na regra comando if");
             }
         }else if (token.getClasse() == Classe.identifier){
+            //{A49}
             String variavel = token.getValue().getstringValue();
             if (!tabela.isPresent(variavel)) {
                 System.err.println("Variável " + variavel + " não foi declarada a49");
                 System.exit(-1);
             } else {
-                Registro registro = tabela.get(variavel);
+                 registro = tabela.get(variavel);
                 if (registro.getCategoria() != Categoria.VARIAVEL) {
                     System.err.println("Identificador " + variavel + " não é uma variável");
                     System.exit(-1);
@@ -435,6 +436,8 @@ public class Sintatico {
             if (token.getClasse() == Classe.allocation){
                 token = lexico.nextToken();
                 expressao();
+                //{A22}
+                 registro = tabela.get(variavel);
                 escreverCodigo("\tpop eax");
                 escreverCodigo("\tmov dword[ebp -" + registro.getOffset() + "] , eax");
             }else{
@@ -993,17 +996,18 @@ public class Sintatico {
         if(token.getClasse() == Classe.sumOperator){
             token = lexico.nextToken();
             termo();
-            mais_expressao();
             //{A37}
             escreverCodigo("\tpop eax");
             escreverCodigo("\tadd dword[ESP], eax");
+
+            mais_expressao();
         } else if (token.getClasse() == Classe.subtractOperator){
             token = lexico.nextToken();
             termo();
-            mais_expressao();
             //{A38}
             escreverCodigo("\tpop eax");
             escreverCodigo("\tsub dword[ESP], eax");
+            mais_expressao();
         }
     }
 
@@ -1016,21 +1020,20 @@ public class Sintatico {
         if(token.getClasse() == Classe.multiplyOperator ){
             token = lexico.nextToken();
             fator();
-            mais_termo();
             //{A39}
             escreverCodigo("\tpop eax");
             escreverCodigo("\timul eax, dword [ESP]");
             escreverCodigo("\tmov dword[ESP], eax");
-
+            mais_termo();
         } else if (token.getClasse() == Classe.divisionOperator){
             token = lexico.nextToken();
             fator();
-            mais_termo();
             //{A40}
             escreverCodigo("\tpop ecx");
             escreverCodigo("\tpop eax");
             escreverCodigo("\tidiv ecx");
             escreverCodigo("\tpush eax");
+            mais_termo();
         }
     }
 

@@ -7,6 +7,7 @@ main: 	; Entrada do programa
 	push ebp
 	mov ebp, esp
 	sub esp, 8
+	sub esp, 20
 	push rotuloString1
 	call printf
 	add esp, 4
@@ -289,7 +290,7 @@ rotuloFimIf42: 	push rotuloString45
 	mov dword[ebp -0] , eax
 	push 5
 	pop eax
-	mov dword[ebp -0] , eax
+	mov dword[ebp -4] , eax
 	push dword[ebp - 0]
 	push 10
 	pop eax
@@ -333,7 +334,7 @@ rotuloFimIf53: 	push rotuloString55
 	add esp, 4
 	push 5
 	pop eax
-	mov dword[ebp -4] , eax
+	mov dword[ebp -0] , eax
 	push 5
 	pop eax
 	mov dword[ebp -4] , eax
@@ -380,7 +381,7 @@ rotuloFimIf63: 	push rotuloString65
 	add esp, 4
 	push 15
 	pop eax
-	mov dword[ebp -4] , eax
+	mov dword[ebp -0] , eax
 	push 15
 	pop eax
 	mov dword[ebp -4] , eax
@@ -427,7 +428,7 @@ rotuloFimIf73: 	push rotuloString75
 	add esp, 4
 	push 5
 	pop eax
-	mov dword[ebp -4] , eax
+	mov dword[ebp -0] , eax
 	push 15
 	pop eax
 	mov dword[ebp -4] , eax
@@ -474,7 +475,7 @@ rotuloFimIf83: 	push rotuloString85
 	add esp, 4
 	push 5
 	pop eax
-	mov dword[ebp -4] , eax
+	mov dword[ebp -0] , eax
 	push 15
 	pop eax
 	mov dword[ebp -4] , eax
@@ -521,7 +522,7 @@ rotuloFimIf93: 	push rotuloString95
 	add esp, 4
 	push 5
 	pop eax
-	mov dword[ebp -4] , eax
+	mov dword[ebp -0] , eax
 	push 5
 	pop eax
 	mov dword[ebp -4] , eax
@@ -568,7 +569,7 @@ rotuloFimIf103: 	push rotuloString105
 	add esp, 4
 	push 15
 	pop eax
-	mov dword[ebp -4] , eax
+	mov dword[ebp -0] , eax
 	push 15
 	pop eax
 	mov dword[ebp -4] , eax
@@ -615,7 +616,7 @@ rotuloFimIf113: 	push rotuloString115
 	add esp, 4
 	push 15
 	pop eax
-	mov dword[ebp -4] , eax
+	mov dword[ebp -0] , eax
 	push 5
 	pop eax
 	mov dword[ebp -4] , eax
@@ -662,7 +663,7 @@ rotuloFimIf123: 	push rotuloString125
 	add esp, 4
 	push 15
 	pop eax
-	mov dword[ebp -4] , eax
+	mov dword[ebp -0] , eax
 	push dword[ebp - 0]
 	push 10
 	pop eax
@@ -729,7 +730,169 @@ rotuloFimIf139: 	push rotuloString141
 	push 5
 	pop eax
 	mov dword[ebp -0] , eax
-	leave
+	push dword[ebp - 0]
+	push @Integer
+	call printf
+	add esp, 8
+	push rotuloStringLN
+	call printf
+	add esp, 4
+	push 5
+	push 5
+	pop eax
+	add dword[ESP], eax
+	pop eax
+	mov dword[ebp -0] , eax
+	push dword[ebp - 0]
+	push @Integer
+	call printf
+	add esp, 8
+	push rotuloStringLN
+	call printf
+	add esp, 4
+	push dword[ebp - 0]
+	push 5
+	pop eax
+	add dword[ESP], eax
+	pop eax
+	mov dword[ebp -0] , eax
+	push dword[ebp - 0]
+	push @Integer
+	call printf
+	add esp, 8
+	push rotuloStringLN
+	call printf
+	add esp, 4
+	push 5
+	push dword[ebp - 0]
+	pop eax
+	add dword[ESP], eax
+	pop eax
+	mov dword[ebp -0] , eax
+	push dword[ebp - 0]
+	push @Integer
+	call printf
+	add esp, 8
+	push rotuloStringLN
+	call printf
+	add esp, 4
+	push 10
+	pop eax
+	mov dword[ebp -4] , eax
+	push 5
+	pop eax
+	mov dword[ebp -0] , eax
+	push dword[ebp - 4]
+	push dword[ebp - 0]
+	pop eax
+	add dword[ESP], eax
+	pop eax
+	mov dword[ebp -0] , eax
+	push dword[ebp - 0]
+	push @Integer
+	call printf
+	add esp, 8
+	push rotuloStringLN
+	call printf
+	add esp, 4
+	push 0
+	pop eax
+	mov dword[ebp -4] , eax
+	push dword[ebp - 0]
+	push dword[ebp - 0]
+	pop eax
+	add dword[ESP], eax
+	pop eax
+	mov dword[ebp -4] , eax
+	push dword[ebp - 4]
+	push @Integer
+	call printf
+	add esp, 8
+	push rotuloStringLN
+	call printf
+	add esp, 4
+	push rotuloString142
+	call printf
+	add esp, 4
+	push rotuloStringLN
+	call printf
+	add esp, 4
+	push 1
+	pop eax
+	mov dword[ebp -8] , eax
+	push 1
+	pop eax
+	mov dword[ebp -12] , eax
+	push 0
+	pop eax
+	mov dword[ebp -16] , eax
+	push 0
+	pop eax
+	mov dword[ebp -20] , eax
+	push rotuloString143
+	call printf
+	add esp, 4
+	mov edx, ebp
+	lea eax, [edx - 16]
+	push eax
+	push @Integer
+	call scanf
+	add esp, 8
+	push dword[ebp - 8]
+	push @Integer
+	call printf
+	add esp, 8
+	push rotuloStringLN
+	call printf
+	add esp, 4
+	push dword[ebp - 12]
+	push @Integer
+	call printf
+	add esp, 8
+	push rotuloStringLN
+	call printf
+	add esp, 4
+	push 2
+	pop eax
+	mov dword[ebp -24] , eax
+rotuloWhile144: 	push dword[ebp - 24]
+	push dword[ebp - 16]
+	pop eax
+	cmp dword [ESP], eax
+	jg rotuloFalsoREL146
+	mov dword [ESP], 1
+	jmp rotuloSaidaREL147
+rotuloFalsoREL146: 	mov dword [ESP], 0
+rotuloSaidaREL147: 	cmp dword[esp], 0
+
+	je rotuloFimWhile145
+	push dword[ebp - 8]
+	push dword[ebp - 12]
+	pop eax
+	add dword[ESP], eax
+	pop eax
+	mov dword[ebp -20] , eax
+	push dword[ebp - 20]
+	push @Integer
+	call printf
+	add esp, 8
+	push rotuloStringLN
+	call printf
+	add esp, 4
+	push dword[ebp - 12]
+	pop eax
+	mov dword[ebp -8] , eax
+	push dword[ebp - 20]
+	pop eax
+	mov dword[ebp -12] , eax
+	push dword[ebp - 24]
+	push 1
+	pop eax
+	add dword[ESP], eax
+	pop eax
+	mov dword[ebp -24] , eax
+	jmp rotuloWhile144
+rotuloFimWhile145: 	leave
 	ret
 
 section .data
@@ -776,3 +939,5 @@ rotuloString132: db 'Entrou no if', 0
 rotuloString133: db '----------IF_COM_NOT_2------------', 0 
 rotuloString140: db 'Entrou no if', 0 
 rotuloString141: db '----------ATRIBUICAO------------', 0 
+rotuloString142: db '----------FIBONACCI------------', 0 
+rotuloString143: db 'Informe a quantidade de numeros que deseja ver da sequencia fibonacci: ', 0 
